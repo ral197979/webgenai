@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 
 const STYLES = [
   { id: 'dark-luxury', label: 'Dark Luxury' },
@@ -90,6 +90,12 @@ export default function WebGenAI() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (html && prompt.trim() && !loading) {
+      generate();
+    }
+  }, [style]);
 
   const copy = () => {
     navigator.clipboard.writeText(html);
