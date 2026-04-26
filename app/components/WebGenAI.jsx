@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 
 const STYLES = [
   { id: 'dark-luxury', label: 'Dark Luxury' },
@@ -48,7 +48,7 @@ export default function WebGenAI() {
   const [stage, setStage] = useState(0);
   const intervalRef = useRef(null);
 
-  const generate = async () => {
+  const generate = useCallback(async () => {
     if (!prompt.trim() || loading) return;
     setLoading(true);
     setError('');
@@ -89,13 +89,13 @@ export default function WebGenAI() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [prompt, style, loading]);
 
   useEffect(() => {
     if (html && prompt.trim() && !loading) {
       generate();
     }
-  }, [style]);
+  }, [html, prompt, style, loading, generate]);
 
   const copy = () => {
     navigator.clipboard.writeText(html);
