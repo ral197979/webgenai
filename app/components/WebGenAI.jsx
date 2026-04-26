@@ -232,7 +232,7 @@ export default function WebGenAI() {
                 marginTop: 1,
               }}
             >
-              PROMAX · CLAUDE SONNET 4
+              PROMAX · CLAUDE SONNET 4.6
             </div>
           </div>
         </div>
@@ -491,7 +491,7 @@ export default function WebGenAI() {
               <br />
               Engine:{' '}
               <span style={{ color: 'rgba(255,255,255,.75)' }}>
-                Claude Sonnet 4
+                Claude Sonnet 4.6
               </span>
               <br />
               Animations:{' '}
