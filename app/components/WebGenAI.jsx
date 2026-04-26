@@ -52,7 +52,6 @@ export default function WebGenAI() {
     if (!prompt.trim() || loading) return;
     setLoading(true);
     setError('');
-    setHtml('');
     setStage(0);
 
     let idx = 0;
@@ -96,7 +95,7 @@ export default function WebGenAI() {
       generate();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [html, prompt, style]);
+  }, [style]);
 
   const copy = () => {
     navigator.clipboard.writeText(html);
