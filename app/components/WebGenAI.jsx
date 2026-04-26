@@ -95,7 +95,8 @@ export default function WebGenAI() {
     if (html && prompt.trim() && !loading) {
       generate();
     }
-  }, [html, prompt, style, loading, generate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [html, prompt, style]);
 
   const copy = () => {
     navigator.clipboard.writeText(html);
