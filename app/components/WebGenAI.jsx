@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const STYLES = [
   { id: 'dark-luxury', label: 'Dark Luxury' },
@@ -37,6 +38,12 @@ const STAGES = [
   'Running UX quality checks...',
 ];
 
+const fadeUp = (delay = 0) => ({
+  initial: { opacity: 0, y: 18 },
+  animate: { opacity: 1, y: 0 },
+  transition: { duration: 0.5, ease: 'easeOut', delay },
+});
+
 export default function WebGenAI() {
   const [prompt, setPrompt] = useState('');
   const [style, setStyle] = useState('aurora');
@@ -66,10 +73,7 @@ export default function WebGenAI() {
       const res = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          prompt: prompt.trim(),
-          style: styleLabel,
-        }),
+        body: JSON.stringify({ prompt: prompt.trim(), style: styleLabel }),
       });
 
       clearInterval(intervalRef.current);
@@ -104,10 +108,7 @@ export default function WebGenAI() {
   };
 
   const download = () => {
-    const slug = prompt
-      .slice(0, 30)
-      .replace(/[^a-z0-9]/gi, '-')
-      .toLowerCase();
+    const slug = prompt.slice(0, 30).replace(/[^a-z0-9]/gi, '-').toLowerCase();
     const blob = new Blob([html], { type: 'text/html' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -118,6 +119,7 @@ export default function WebGenAI() {
   };
 
   const hasOutput = !!html;
+  const canGenerate = !loading && !!prompt.trim();
 
   return (
     <div
@@ -134,31 +136,24 @@ export default function WebGenAI() {
         @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-        @keyframes fadeUp { from{opacity:0;transform:translateY(18px)} to{opacity:1;transform:translateY(0)} }
         @keyframes spin { to{transform:rotate(360deg)} }
         @keyframes shimmer { 0%{background-position:-200% center} 100%{background-position:200% center} }
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
         @keyframes glow { 0%,100%{box-shadow:0 0 16px rgba(99,102,241,.2)} 50%{box-shadow:0 0 32px rgba(99,102,241,.5)} }
 
-        .fu1{animation:fadeUp .6s ease .05s both}
-        .fu2{animation:fadeUp .6s ease .2s both}
-        .fu3{animation:fadeUp .6s ease .35s both}
-        .fu4{animation:fadeUp .6s ease .5s both}
-
         textarea { width:100%; background:rgba(255,255,255,.04); border:1.5px solid rgba(255,255,255,.08); border-radius:14px; color:#fff; padding:14px 16px; font-size:14px; font-family:'DM Sans',sans-serif; resize:none; outline:none; transition:border-color .2s; line-height:1.7; }
         textarea:focus { border-color:rgba(99,102,241,.6); }
         textarea::placeholder { color:rgba(255,255,255,.2); }
 
-        .chip { padding:6px 14px; border-radius:100px; border:1.5px solid rgba(255,255,255,.08); background:rgba(255,255,255,.03); color:rgba(255,255,255,.4); font-size:12px; font-weight:500; cursor:pointer; transition:all .15s; white-space:nowrap; font-family:'DM Sans',sans-serif; }
+        .chip { padding:6px 14px; border-radius:100px; border:1.5px solid rgba(255,255,255,.08); background:rgba(255,255,255,.03); color:rgba(255,255,255,.4); font-size:12px; font-weight:500; cursor:pointer; white-space:nowrap; font-family:'DM Sans',sans-serif; }
         .chip:hover { border-color:rgba(99,102,241,.4); color:rgba(255,255,255,.75); background:rgba(99,102,241,.07); }
         .chip.active { border-color:#6366F1; background:rgba(99,102,241,.16); color:#fff; animation:glow 3s ease infinite; }
 
         .ex { padding:4px 12px; border-radius:100px; border:1px solid rgba(255,255,255,.06); background:transparent; color:rgba(255,255,255,.28); font-size:11px; cursor:pointer; transition:all .15s; font-family:'DM Sans',sans-serif; white-space:nowrap; }
         .ex:hover { border-color:rgba(255,255,255,.16); color:rgba(255,255,255,.6); }
 
-        .gen-btn { width:100%; padding:15px; border-radius:14px; border:none; background:linear-gradient(135deg,#6366F1,#4F46E5,#7C3AED); color:#fff; font-size:15px; font-weight:700; cursor:pointer; transition:all .2s; font-family:'DM Sans',sans-serif; position:relative; overflow:hidden; letter-spacing:-.01em; }
-        .gen-btn:hover:not(:disabled) { transform:translateY(-2px); box-shadow:0 10px 40px rgba(99,102,241,.45); }
-        .gen-btn:disabled { opacity:.6; cursor:not-allowed; transform:none!important; }
+        .gen-btn { width:100%; padding:15px; border-radius:14px; border:none; background:linear-gradient(135deg,#6366F1,#4F46E5,#7C3AED); color:#fff; font-size:15px; font-weight:700; cursor:pointer; font-family:'DM Sans',sans-serif; position:relative; overflow:hidden; letter-spacing:-.01em; }
+        .gen-btn:disabled { opacity:.6; cursor:not-allowed; }
         .gen-btn::after { content:''; position:absolute; inset:0; background:linear-gradient(90deg,transparent,rgba(255,255,255,.1),transparent); background-size:200% 100%; animation:shimmer 2.5s linear infinite; }
 
         .tab { padding:7px 18px; border-radius:8px; border:none; font-size:12px; font-weight:700; cursor:pointer; transition:all .15s; font-family:'DM Sans',sans-serif; letter-spacing:.02em; }
@@ -199,7 +194,9 @@ export default function WebGenAI() {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div
+          <motion.div
+            whileHover={{ rotate: 15, scale: 1.1 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 15 }}
             style={{
               width: 32,
               height: 32,
@@ -212,39 +209,19 @@ export default function WebGenAI() {
             }}
           >
             ⚡
-          </div>
+          </motion.div>
           <div>
-            <div
-              style={{
-                fontFamily: "'Syne',sans-serif",
-                fontWeight: 800,
-                fontSize: 15,
-                letterSpacing: '-.03em',
-              }}
-            >
+            <div style={{ fontFamily: "'Syne',sans-serif", fontWeight: 800, fontSize: 15, letterSpacing: '-.03em' }}>
               WebGen<span style={{ color: '#818CF8' }}>AI</span>
             </div>
-            <div
-              style={{
-                fontSize: 9,
-                color: 'rgba(255,255,255,.25)',
-                letterSpacing: '.1em',
-                marginTop: 1,
-              }}
-            >
+            <div style={{ fontSize: 9, color: 'rgba(255,255,255,.25)', letterSpacing: '.1em', marginTop: 1 }}>
               PROMAX · CLAUDE SONNET 4.6
             </div>
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
           <div className="live-dot" />
-          <span
-            style={{
-              fontSize: 11,
-              color: 'rgba(255,255,255,.28)',
-              fontFamily: "'JetBrains Mono',monospace",
-            }}
-          >
+          <span style={{ fontSize: 11, color: 'rgba(255,255,255,.28)', fontFamily: "'JetBrains Mono',monospace" }}>
             API Ready
           </span>
         </div>
@@ -275,347 +252,310 @@ export default function WebGenAI() {
           }}
         >
           {/* Hero text (only before first generation) */}
-          {!hasOutput && (
-            <div className="fu1" style={{ textAlign: 'center', paddingTop: 8 }}>
-              <div
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 7,
-                  padding: '5px 14px',
-                  borderRadius: 100,
-                  border: '1px solid rgba(99,102,241,.3)',
-                  background: 'rgba(99,102,241,.07)',
-                  marginBottom: 18,
-                }}
-              >
-                <span
+          <AnimatePresence>
+            {!hasOutput && (
+              <motion.div {...fadeUp(0.05)} style={{ textAlign: 'center', paddingTop: 8 }}>
+                <div
                   style={{
-                    fontSize: 10,
-                    color: '#A5B4FC',
-                    letterSpacing: '.07em',
-                    fontWeight: 700,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 7,
+                    padding: '5px 14px',
+                    borderRadius: 100,
+                    border: '1px solid rgba(99,102,241,.3)',
+                    background: 'rgba(99,102,241,.07)',
+                    marginBottom: 18,
                   }}
                 >
-                  ✦ PROMAX WEBSITES POWERED BY CLAUDE
-                </span>
-              </div>
-              <h1
-                className="fu2"
-                style={{
-                  fontFamily: "'Syne',sans-serif",
-                  fontWeight: 800,
-                  fontSize: 'clamp(26px,5vw,40px)',
-                  letterSpacing: '-.035em',
-                  lineHeight: 1.08,
-                  marginBottom: 12,
-                }}
-              >
-                Generate Stunning
-                <br />
-                <span
+                  <span style={{ fontSize: 10, color: '#A5B4FC', letterSpacing: '.07em', fontWeight: 700 }}>
+                    ✦ PROMAX WEBSITES POWERED BY CLAUDE
+                  </span>
+                </div>
+                <motion.h1
+                  {...fadeUp(0.2)}
                   style={{
-                    background:
-                      'linear-gradient(135deg,#818CF8,#22D3EE,#6EE7B7)',
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
+                    fontFamily: "'Syne',sans-serif",
+                    fontWeight: 800,
+                    fontSize: 'clamp(26px,5vw,40px)',
+                    letterSpacing: '-.035em',
+                    lineHeight: 1.08,
+                    marginBottom: 12,
                   }}
                 >
-                  Websites Instantly
-                </span>
-              </h1>
-              <p
-                className="fu3"
-                style={{
-                  color: 'rgba(255,255,255,.35)',
-                  fontSize: 13.5,
-                  lineHeight: 1.75,
-                }}
-              >
-                Describe any product. Pick a style.
-                <br />
-                Get a production-ready, animated website in seconds.
-              </p>
-            </div>
-          )}
+                  Generate Stunning
+                  <br />
+                  <span
+                    style={{
+                      background: 'linear-gradient(135deg,#818CF8,#22D3EE,#6EE7B7)',
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                    }}
+                  >
+                    Websites Instantly
+                  </span>
+                </motion.h1>
+                <motion.p
+                  {...fadeUp(0.35)}
+                  style={{ color: 'rgba(255,255,255,.35)', fontSize: 13.5, lineHeight: 1.75 }}
+                >
+                  Describe any product. Pick a style.
+                  <br />
+                  Get a production-ready, animated website in seconds.
+                </motion.p>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Prompt */}
-          <div className={hasOutput ? '' : 'fu4'}>
+          <motion.div {...fadeUp(hasOutput ? 0 : 0.5)}>
             <label className="label">DESCRIBE YOUR WEBSITE</label>
             <textarea
               rows={hasOutput ? 5 : 4}
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) generate();
-              }}
+              onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) generate(); }}
               placeholder="e.g. Luna — AI-powered predictive maintenance for industrial facilities..."
             />
-          </div>
+          </motion.div>
 
           {/* Examples */}
-          {!hasOutput && (
-            <div>
-              <label className="label">QUICK EXAMPLES</label>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
-                {EXAMPLES.map((ex) => (
-                  <button
-                    key={ex}
-                    className="ex"
-                    onClick={() => setPrompt(ex)}
-                  >
-                    {ex.slice(0, 25)}...
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
+          <AnimatePresence>
+            {!hasOutput && (
+              <motion.div {...fadeUp(0.6)}>
+                <label className="label">QUICK EXAMPLES</label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+                  {EXAMPLES.map((ex) => (
+                    <button key={ex} className="ex" onClick={() => setPrompt(ex)}>
+                      {ex.slice(0, 25)}...
+                    </button>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Style Selector */}
           <div>
             <label className="label">DESIGN STYLE</label>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
               {STYLES.map((s) => (
-                <button
+                <motion.button
                   key={s.id}
                   className={`chip ${style === s.id ? 'active' : ''}`}
                   onClick={() => setStyle(s.id)}
+                  whileHover={{ scale: 1.06 }}
+                  whileTap={{ scale: 0.94 }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 20 }}
                 >
                   {s.label}
-                </button>
+                </motion.button>
               ))}
             </div>
           </div>
 
           {/* Generate Button */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <button
+            <motion.button
               className="gen-btn"
               onClick={generate}
-              disabled={loading || !prompt.trim()}
+              disabled={!canGenerate}
+              whileHover={canGenerate ? { y: -2, boxShadow: '0 12px 40px rgba(99,102,241,.5)' } : {}}
+              whileTap={canGenerate ? { scale: 0.98 } : {}}
+              transition={{ type: 'spring', stiffness: 400, damping: 20 }}
             >
               {loading ? (
-                <span
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 9,
-                    position: 'relative',
-                    zIndex: 1,
-                  }}
-                >
+                <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9, position: 'relative', zIndex: 1 }}>
                   <span className="spinner" />
-                  {STAGES[stage]}
+                  <AnimatePresence mode="wait">
+                    <motion.span
+                      key={stage}
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -6 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      {STAGES[stage]}
+                    </motion.span>
+                  </AnimatePresence>
                 </span>
               ) : (
                 <span style={{ position: 'relative', zIndex: 1 }}>
                   {hasOutput ? '↻ Regenerate' : '⚡ Generate Website'}
                   {!hasOutput && (
-                    <span style={{ opacity: 0.5, fontSize: 11, marginLeft: 8 }}>
-                      ⌘↵
-                    </span>
+                    <span style={{ opacity: 0.5, fontSize: 11, marginLeft: 8 }}>⌘↵</span>
                   )}
                 </span>
               )}
-            </button>
+            </motion.button>
             {loading && (
               <div>
                 <div className="progress-track">
-                  <div
-                    className="progress-fill"
-                    style={{
-                      width: `${((stage + 1) / STAGES.length) * 100}%`,
-                    }}
-                  />
+                  <div className="progress-fill" style={{ width: `${((stage + 1) / STAGES.length) * 100}%` }} />
                 </div>
-                <div
-                  style={{
-                    textAlign: 'center',
-                    fontSize: 10,
-                    color: 'rgba(255,255,255,.2)',
-                    marginTop: 5,
-                    fontFamily: "'JetBrains Mono',monospace",
-                  }}
-                >
+                <div style={{ textAlign: 'center', fontSize: 10, color: 'rgba(255,255,255,.2)', marginTop: 5, fontFamily: "'JetBrains Mono',monospace" }}>
                   step {stage + 1} / {STAGES.length}
                 </div>
               </div>
             )}
           </div>
 
-          {error && (
-            <div
-              style={{
-                padding: '11px 14px',
-                borderRadius: 10,
-                background: 'rgba(239,68,68,.07)',
-                border: '1px solid rgba(239,68,68,.2)',
-                color: '#FCA5A5',
-                fontSize: 12.5,
-                lineHeight: 1.6,
-              }}
-            >
-              ⚠ {error}
-            </div>
-          )}
-
-          {/* Generation info */}
-          {hasOutput && (
-            <div
-              style={{
-                padding: '12px 14px',
-                borderRadius: 10,
-                background: 'rgba(99,102,241,.06)',
-                border: '1px solid rgba(99,102,241,.18)',
-                fontSize: 12,
-                color: 'rgba(255,255,255,.45)',
-                lineHeight: 1.7,
-              }}
-            >
-              <div
+          {/* Error */}
+          <AnimatePresence>
+            {error && (
+              <motion.div
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.2 }}
                 style={{
-                  color: '#A5B4FC',
-                  fontWeight: 700,
-                  marginBottom: 5,
-                  fontSize: 11,
-                  letterSpacing: '.05em',
+                  padding: '11px 14px',
+                  borderRadius: 10,
+                  background: 'rgba(239,68,68,.07)',
+                  border: '1px solid rgba(239,68,68,.2)',
+                  color: '#FCA5A5',
+                  fontSize: 12.5,
+                  lineHeight: 1.6,
                 }}
               >
-                ✦ APPLIED
-              </div>
-              Style:{' '}
-              <span style={{ color: 'rgba(255,255,255,.75)' }}>
-                {STYLES.find((s) => s.id === style)?.label}
-              </span>
-              <br />
-              Engine:{' '}
-              <span style={{ color: 'rgba(255,255,255,.75)' }}>
-                Claude Sonnet 4.6
-              </span>
-              <br />
-              Animations:{' '}
-              <span style={{ color: 'rgba(255,255,255,.75)' }}>
-                All included
-              </span>
-            </div>
-          )}
+                ⚠ {error}
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Generation info */}
+          <AnimatePresence>
+            {hasOutput && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+                style={{
+                  padding: '12px 14px',
+                  borderRadius: 10,
+                  background: 'rgba(99,102,241,.06)',
+                  border: '1px solid rgba(99,102,241,.18)',
+                  fontSize: 12,
+                  color: 'rgba(255,255,255,.45)',
+                  lineHeight: 1.7,
+                }}
+              >
+                <div style={{ color: '#A5B4FC', fontWeight: 700, marginBottom: 5, fontSize: 11, letterSpacing: '.05em' }}>
+                  ✦ APPLIED
+                </div>
+                Style: <span style={{ color: 'rgba(255,255,255,.75)' }}>{STYLES.find((s) => s.id === style)?.label}</span>
+                <br />
+                Engine: <span style={{ color: 'rgba(255,255,255,.75)' }}>Claude Sonnet 4.6</span>
+                <br />
+                Animations: <span style={{ color: 'rgba(255,255,255,.75)' }}>All included</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* RIGHT PANEL */}
-        {hasOutput && (
-          <div
-            style={{
-              flex: 1,
-              display: 'flex',
-              flexDirection: 'column',
-              minWidth: 0,
-              height: 'calc(100vh - 64px)',
-            }}
-          >
-            {/* Toolbar */}
-            <div
-              style={{
-                padding: '10px 16px',
-                borderBottom: '1px solid rgba(255,255,255,.06)',
-                background: 'rgba(255,255,255,.015)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: 12,
-                flexShrink: 0,
-              }}
+        <AnimatePresence>
+          {hasOutput && (
+            <motion.div
+              initial={{ opacity: 0, x: 40 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 40 }}
+              transition={{ duration: 0.35, ease: 'easeOut' }}
+              style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, height: 'calc(100vh - 64px)' }}
             >
+              {/* Toolbar */}
               <div
                 style={{
+                  padding: '10px 16px',
+                  borderBottom: '1px solid rgba(255,255,255,.06)',
+                  background: 'rgba(255,255,255,.015)',
                   display: 'flex',
-                  gap: 3,
-                  background: 'rgba(255,255,255,.04)',
-                  borderRadius: 9,
-                  padding: 3,
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 12,
+                  flexShrink: 0,
                 }}
               >
-                <button
-                  className={`tab ${view === 'preview' ? 'on' : 'off'}`}
-                  onClick={() => setView('preview')}
-                >
-                  ◻ Preview
-                </button>
-                <button
-                  className={`tab ${view === 'code' ? 'on' : 'off'}`}
-                  onClick={() => setView('code')}
-                >
-                  &lt;/&gt; Code
-                </button>
+                <div style={{ display: 'flex', gap: 3, background: 'rgba(255,255,255,.04)', borderRadius: 9, padding: 3 }}>
+                  <motion.button
+                    className={`tab ${view === 'preview' ? 'on' : 'off'}`}
+                    onClick={() => setView('preview')}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    ◻ Preview
+                  </motion.button>
+                  <motion.button
+                    className={`tab ${view === 'code' ? 'on' : 'off'}`}
+                    onClick={() => setView('code')}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    &lt;/&gt; Code
+                  </motion.button>
+                </div>
+                <div style={{ display: 'flex', gap: 7 }}>
+                  <motion.button
+                    className={`action-btn ${copied ? 'ok' : ''}`}
+                    onClick={copy}
+                    whileHover={{ scale: 1.03 }}
+                    whileTap={{ scale: 0.97 }}
+                  >
+                    {copied ? '✓ Copied!' : '⎘ Copy HTML'}
+                  </motion.button>
+                  <motion.button
+                    className="action-btn"
+                    onClick={download}
+                    whileHover={{ scale: 1.03 }}
+                    whileTap={{ scale: 0.97 }}
+                  >
+                    ↓ Download
+                  </motion.button>
+                </div>
               </div>
-              <div style={{ display: 'flex', gap: 7 }}>
-                <button
-                  className={`action-btn ${copied ? 'ok' : ''}`}
-                  onClick={copy}
-                >
-                  {copied ? '✓ Copied!' : '⎘ Copy HTML'}
-                </button>
-                <button className="action-btn" onClick={download}>
-                  ↓ Download
-                </button>
-              </div>
-            </div>
 
-            {view === 'preview' && (
-              <iframe
-                key={html}
-                srcDoc={html}
-                style={{
-                  flex: 1,
-                  border: 'none',
-                  width: '100%',
-                  display: 'block',
-                }}
-                title="Generated Website Preview"
-                sandbox="allow-scripts allow-same-origin"
-              />
-            )}
-
-            {view === 'code' && (
-              <div
-                style={{
-                  flex: 1,
-                  overflow: 'auto',
-                  background: '#0D1117',
-                  padding: '20px 24px',
-                }}
-              >
-                <pre
-                  style={{
-                    fontFamily: "'JetBrains Mono',monospace",
-                    fontSize: 11.5,
-                    color: '#E6EDF3',
-                    lineHeight: 1.8,
-                    whiteSpace: 'pre-wrap',
-                    wordBreak: 'break-word',
-                  }}
-                >
-                  {html}
-                </pre>
-              </div>
-            )}
-          </div>
-        )}
+              <AnimatePresence mode="wait">
+                {view === 'preview' && (
+                  <motion.iframe
+                    key={`preview-${html.length}`}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.3 }}
+                    srcDoc={html}
+                    style={{ flex: 1, border: 'none', width: '100%', display: 'block' }}
+                    title="Generated Website Preview"
+                    sandbox="allow-scripts allow-same-origin"
+                  />
+                )}
+                {view === 'code' && (
+                  <motion.div
+                    key="code"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.2 }}
+                    style={{ flex: 1, overflow: 'auto', background: '#0D1117', padding: '20px 24px' }}
+                  >
+                    <pre style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 11.5, color: '#E6EDF3', lineHeight: 1.8, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                      {html}
+                    </pre>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Empty state hint */}
-        {!hasOutput && !loading && (
-          <div
-            style={{
-              textAlign: 'center',
-              padding: '0 24px 32px',
-              color: 'rgba(255,255,255,.15)',
-              fontSize: 11,
-              fontFamily: "'JetBrains Mono',monospace",
-            }}
-          >
-            fill in your description → pick a style → hit generate
-          </div>
-        )}
+        <AnimatePresence>
+          {!hasOutput && !loading && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ delay: 0.8 }}
+              style={{ textAlign: 'center', padding: '0 24px 32px', color: 'rgba(255,255,255,.15)', fontSize: 11, fontFamily: "'JetBrains Mono',monospace" }}
+            >
+              fill in your description → pick a style → hit generate
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
